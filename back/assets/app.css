@@ -1,4 +1,18 @@
+body {
+  padding: 50px; }
+
 h1 {
-  color: #444; }
+  font-size: 28px !important; }
+
+.wrapper {
+  width: 860px;
+  margin: 0 auto; }
+  .wrapper header {
+    width: 270px;
+    float: left;
+    position: fixed;
+    -webkit-font-smoothing: subpixel-antialiased; }
+    .wrapper header a {
+      padding: 10px; }
 
 /*# sourceMappingURL=app.css.map */

@@ -523,12 +523,6 @@ if (HAS_TYPED_ARRAYS) {
 }
 const EMPTY_ARRAY = HAS_NATIVE_WEAKMAP ? Object.freeze([]) : [];
 
-/**
- * Registers
- *
- * For the most part, these follows MIPS naming conventions, however the
- * register numbers are different.
- */
 var Register;
 (function (Register) {
     // $0 or $pc (program counter): pointer into `program` for the next insturction; -1 means exit
@@ -2133,7 +2127,6 @@ class UpdateDynamicContentOpcode extends UpdatingOpcode {
     }
 }
 
-/* tslint:disable */
 function debugCallback(context, get) {
     console.info('Use `context`, and `get(<path>)` to debug this template.');
     // for example...
@@ -7659,6 +7652,67 @@ class BasicRegistry {
     }
 }
 
+function tracked(...dependencies) {
+    let target = dependencies[0],
+        key = dependencies[1],
+        descriptor = dependencies[2];
+
+    if (typeof target === "string") {
+        return function (target, key, descriptor) {
+            return descriptorForTrackedComputedProperty(target, key, descriptor, dependencies);
+        };
+    } else {
+        if (descriptor) {
+            return descriptorForTrackedComputedProperty(target, key, descriptor, []);
+        } else {
+            installTrackedProperty(target, key);
+        }
+    }
+}
+function descriptorForTrackedComputedProperty(target, key, descriptor, dependencies) {
+    let meta = metaFor$1(target);
+    meta.trackedProperties[key] = true;
+    meta.trackedPropertyDependencies[key] = dependencies || [];
+    return {
+        enumerable: true,
+        configurable: false,
+        get: descriptor.get,
+        set: function set() {
+            metaFor$1(this).dirtyableTagFor(key).inner.dirty();
+            descriptor.set.apply(this, arguments);
+            propertyDidChange();
+        }
+    };
+}
+/**
+  Installs a getter/setter for change tracking. The accessor
+  acts just like a normal property, but it triggers the `propertyDidChange`
+  hook when written to.
+
+  Values are saved on the object using a "shadow key," or a symbol based on the
+  tracked property name. Sets write the value to the shadow key, and gets read
+  from it.
+ */
+function installTrackedProperty(target, key) {
+    let value;
+    let shadowKey = Symbol(key);
+    let meta = metaFor$1(target);
+    meta.trackedProperties[key] = true;
+    if (target[key] !== undefined) {
+        value = target[key];
+    }
+    Object.defineProperty(target, key, {
+        configurable: true,
+        get() {
+            return this[shadowKey];
+        },
+        set(newValue) {
+            metaFor$1(this).dirtyableTagFor(key).inner.dirty();
+            this[shadowKey] = newValue;
+            propertyDidChange();
+        }
+    });
+}
 /**
  * Stores bookkeeping information about tracked properties on the target object
  * and includes helper methods for manipulating and retrieving that data.
@@ -7836,129 +7890,6 @@ function installDevModeErrorInterceptor(obj, key, throwError) {
     }
 }
 
-/**
- * The `Component` class defines an encapsulated UI element that is rendered to
- * the DOM. A component is made up of a template and, optionally, this component
- * object.
- *
- * ## Defining a Component
- *
- * To define a component, subclass `Component` and add your own properties,
- * methods and lifecycle hooks:
- *
- * ```ts
- * import Component from '@glimmer/component';
- *
- * export default class extends Component {
- * }
- * ```
- *
- * ## Lifecycle Hooks
- *
- * Lifecycle hooks allow you to respond to changes to a component, such as when
- * it gets created, rendered, updated or destroyed. To add a lifecycle hook to a
- * component, implement the hook as a method on your component subclass.
- *
- * For example, to be notified when Glimmer has rendered your component so you
- * can attach a legacy jQuery plugin, implement the `didInsertElement()` method:
- *
- * ```ts
- * import Component from '@glimmer/component';
- *
- * export default class extends Component {
- *   didInsertElement() {
- *     $(this.element).pickadate();
- *   }
- * }
- * ```
- *
- * ## Data for Templates
- *
- * `Component`s have two different kinds of data, or state, that can be
- * displayed in templates:
- *
- * 1. Arguments
- * 2. Properties
- *
- * Arguments are data that is passed in to a component from its parent
- * component. For example, if I have a `user-greeting` component, I can pass it
- * a name and greeting to use:
- *
- * ```hbs
- * <user-greeting @name="Ricardo" @greeting="Olá">
- * ```
- *
- * Inside my `user-greeting` template, I can access the `@name` and `@greeting`
- * arguments that I've been given:
- *
- * ```hbs
- * {{@greeting}}, {{@name}}!
- * ```
- *
- * Arguments are also available inside my component:
- *
- * ```ts
- * console.log(this.args.greeting); // prints "Olá"
- * ```
- *
- * Properties, on the other hand, are internal to the component and declared in
- * the class. You can use properties to store data that you want to show in the
- * template, or pass to another component as an argument.
- *
- * ```ts
- * import Component from '@glimmer/component';
- *
- * export default class extends Component {
- *   user = {
- *     name: 'Robbie'
- *   }
- * }
- * ```
- *
- * In the above example, we've defined a component with a `user` property that
- * contains an object with its own `name` property.
- *
- * We can render that property in our template:
- *
- * ```hbs
- * Hello, {{user.name}}!
- * ```
- *
- * We can also take that property and pass it as an argument to the
- * `user-greeting` component we defined above:
- *
- * ```hbs
- * <user-greeting @greeting="Hello" @name={{user.name}} />
- * ```
- *
- * ## Arguments vs. Properties
- *
- * Remember, arguments are data that was given to your component by its parent
- * component, and properties are data your component has defined for itself.
- *
- * You can tell the difference between arguments and properties in templates
- * because arguments always start with an `@` sign (think "A is for arguments"):
- *
- * ```hbs
- * {{@firstName}}
- * ```
- *
- * We know that `@firstName` came from the parent component, not the current
- * component, because it starts with `@` and is therefore an argument.
- *
- * On the other hand, if we see:
- *
- * ```hbs
- * {{name}}
- * ```
- *
- * We know that `name` is a property on the component. If we want to know where
- * the data is coming from, we can go look at our component class to find out.
- *
- * Inside the component itself, arguments always show up inside the component's
- * `args` property. For example, if `{{@firstName}}` is `Tom` in the template,
- * inside the component `this.args.firstName` would also be `Tom`.
- */
 class Component {
   /**
    * Constructs a new component and assigns itself the passed properties. You
@@ -8052,9 +7983,6 @@ class ComponentDefinition$1 extends ComponentDefinition {
     }
 }
 
-/**
- * The base PathReference.
- */
 class ComponentPathReference {
     get(key) {
         return PropertyReference$1.create(this, key);
@@ -8237,35 +8165,63 @@ class ComponentManager {
     }
 }
 
-class Store {
-    static retrieve(model, id) {
-        return fetch(`/${model}/${id}`);
-    }
-    static retrieveAll(model) {
-        return fetch(`/${model}s`);
-    }
-}
+class Front extends Component {}
 
-class Front extends Component {
-    didInsertElement() {
-        Store.retrieveAll('post').then(resp => console.log(resp));
-    }
-}
+var __ui_components_front_app_template__ = { "id": "C4VHSCkW", "block": "{\"symbols\":[],\"statements\":[[6,\"div\"],[9,\"class\",\"wrapper\"],[7],[0,\"\\n  \"],[5,\"social-medias\",[],[[],[]],{\"statements\":[],\"parameters\":[]}],[0,\"\\n  \"],[5,\"my-posts\",[],[[],[]],{\"statements\":[],\"parameters\":[]}],[0,\"\\n\"],[8],[0,\"\\n\"]],\"hasEval\":false}", "meta": { "specifier": "template:/front/components/front-app" } };
 
-var __ui_components_front_app_template__ = { "id": "/QWmRuAP", "block": "{\"symbols\":[],\"statements\":[[0,\"\\n\"],[5,\"social-medias\",[],[[],[]],{\"statements\":[],\"parameters\":[]}],[0,\"\\n\"]],\"hasEval\":false}", "meta": { "specifier": "template:/front/components/front-app" } };
-
-class SocialMedias extends Component {
+var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
+    var c = arguments.length,
+        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+        d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __awaiter = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) {
+            try {
+                step(generator.next(value));
+            } catch (e) {
+                reject(e);
+            }
+        }
+        function rejected(value) {
+            try {
+                step(generator["throw"](value));
+            } catch (e) {
+                reject(e);
+            }
+        }
+        function step(result) {
+            result.done ? resolve(result.value) : new P(function (resolve) {
+                resolve(result.value);
+            }).then(fulfilled, rejected);
+        }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+class MyPosts extends Component {
     constructor() {
-        super(...arguments);
-        this.weather = {
-            temperature: 12
-        };
+        super(arguments);
+        this.posts = [];
+        this.loadPosts();
+    }
+    loadPosts() {
+        return __awaiter(this, void 0, void 0, function* () {
+            let response = yield fetch('/posts');
+            this.posts = yield response.json();
+        });
     }
 }
+__decorate([tracked], MyPosts.prototype, "posts", void 0);
 
-var __ui_components_social_medias_template__ = { "id": "mSmHgdPa", "block": "{\"symbols\":[],\"statements\":[[6,\"div\"],[7],[1,[20,[\"weather\",\"temperature\"]],false],[8],[0,\"\\n\"],[6,\"i\"],[9,\"class\",\"fa fa-camera-retro fa-lg\"],[7],[8],[0,\" fa-lg\\n\"],[6,\"i\"],[9,\"class\",\"fa fa-camera-retro fa-2x\"],[7],[8],[0,\" fa-2x\\n\"],[6,\"i\"],[9,\"class\",\"fa fa-camera-retro fa-3x\"],[7],[8],[0,\" fa-3x\\n\"],[6,\"i\"],[9,\"class\",\"fa fa-camera-retro fa-4x\"],[7],[8],[0,\" fa-4x\\n\"],[6,\"i\"],[9,\"class\",\"fa fa-camera-retro fa-5x\"],[7],[8],[0,\" fa-5x\\n\"]],\"hasEval\":false}", "meta": { "specifier": "template:/front/components/social-medias" } };
+var __ui_components_my_posts_template__ = { "id": "xjEi5dKz", "block": "{\"symbols\":[\"p\"],\"statements\":[[0,\"\\n\"],[6,\"div\"],[9,\"style\",\"width: 500px;\\n    float: right;\\n    padding-bottom: 50px;\"],[7],[0,\"\\n\"],[4,\"each\",[[19,0,[\"posts\"]]],[[\"key\"],[\"@index\"]],{\"statements\":[[0,\"    \"],[1,[19,1,[\"Content\"]],true],[0,\"\\n\"]],\"parameters\":[1]},null],[8],[0,\"\\n\"]],\"hasEval\":false}", "meta": { "specifier": "template:/front/components/my-posts" } };
 
-var moduleMap = { 'component:/front/components/front-app': Front, 'template:/front/components/front-app': __ui_components_front_app_template__, 'component:/front/components/social-medias': SocialMedias, 'template:/front/components/social-medias': __ui_components_social_medias_template__, 'component:/front/components/store/retrieve': Store };
+class SocialMedias extends Component {}
+
+var __ui_components_social_medias_template__ = { "id": "nP+J+/MS", "block": "{\"symbols\":[],\"statements\":[[6,\"header\"],[7],[0,\"\\n   \"],[6,\"h1\"],[7],[0,\"Kyle Rose\"],[8],[0,\"\\n   \"],[6,\"img\"],[9,\"src\",\"images/face.webp\"],[9,\"alt\",\"Mountain View\"],[9,\"style\",\"width:228px;height:228px;\"],[7],[8],[0,\"\\n   \"],[6,\"p\"],[7],[0,\"I do not understand what I can not build \"],[6,\"em\"],[7],[0,\"- Richard Feynman\"],[8],[8],[0,\"\\n     \"],[6,\"a\"],[9,\"href\",\"http://github.com/anonrose\"],[7],[0,\"\\n       \"],[6,\"i\"],[9,\"class\",\"fa fa-github-alt fa-2x\"],[9,\"aria-hidden\",\"true\"],[7],[8],[0,\"\\n     \"],[8],[0,\"\\n     \"],[6,\"a\"],[9,\"href\",\"http://twitter.com/esornona\"],[7],[0,\"\\n       \"],[6,\"i\"],[9,\"class\",\"fa fa-twitter fa-2x\"],[9,\"aria-hidden\",\"true\"],[7],[8],[0,\"\\n    \"],[8],[0,\"\\n     \"],[6,\"a\"],[9,\"href\",\"mailto:esornona@gmail.com\"],[7],[0,\"\\n       \"],[6,\"i\"],[9,\"class\",\"fa fa-envelope-open fa-2x\"],[9,\"aria-hidden\",\"true\"],[7],[8],[0,\"\\n     \"],[8],[0,\"\\n\"],[8],[0,\"\\n\"]],\"hasEval\":false}", "meta": { "specifier": "template:/front/components/social-medias" } };
+
+var moduleMap = { 'component:/front/components/front-app': Front, 'template:/front/components/front-app': __ui_components_front_app_template__, 'component:/front/components/my-posts': MyPosts, 'template:/front/components/my-posts': __ui_components_my_posts_template__, 'component:/front/components/social-medias': SocialMedias, 'template:/front/components/social-medias': __ui_components_social_medias_template__ };
 
 var resolverConfiguration = { "app": { "name": "front", "rootName": "front" }, "types": { "application": { "definitiveCollection": "main" }, "component": { "definitiveCollection": "components" }, "component-test": { "unresolvable": true }, "helper": { "definitiveCollection": "components" }, "helper-test": { "unresolvable": true }, "renderer": { "definitiveCollection": "main" }, "template": { "definitiveCollection": "components" } }, "collections": { "main": { "types": ["application", "renderer"] }, "components": { "group": "ui", "types": ["component", "component-test", "template", "helper", "helper-test"], "defaultType": "component", "privateCollections": ["utils"] }, "styles": { "group": "ui", "unresolvable": true }, "utils": { "unresolvable": true } } };
 

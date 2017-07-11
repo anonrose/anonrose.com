@@ -1,7 +1,4 @@
-#
 # It&#39;s easy to get caught up in one thing
-
-Glory Box
 
 To be so engrossed in that thing you lose sight of everything and everyone else.
 
