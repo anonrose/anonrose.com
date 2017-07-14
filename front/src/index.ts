@@ -1,4 +1,5 @@
 import App from './main';
+import 'jquery';
 import { ComponentManager, setPropertyDidChange } from '@glimmer/component';
 
 const app = new App();

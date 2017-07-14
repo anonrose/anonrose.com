@@ -12,4 +12,12 @@ export default class MyPosts extends Component {
     let response = await fetch('/posts');
     this.posts = await response.json();
   }
+  didInsertElement() {
+    $(document).ready(function(){
+      $('.collapsible').collapsible();
+    });
+  }
+  toggleOpen() {
+
+  }
 };

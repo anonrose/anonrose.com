@@ -2,7 +2,15 @@
 <div style="width: 500px;
     float: right;
     padding-bottom: 50px;">
-  {{#each posts key="@index" as |p|}}
-    {{{p.Content}}}
-  {{/each}}
+  <ul class="collapsible" data-collapsible="accordion">
+    {{#each posts key="@index" as |p i|}}
+    <li>
+      <div class="collapsible-header" onclick={{action toggleOpen i}}><div>First</div></div>
+      <div class="collapsible-body {{i}}"><span>{{{p.Content}}}</span></div>
+    </li>
+    {{/each}}
+  </ul>
 </div>
+    
+      
+

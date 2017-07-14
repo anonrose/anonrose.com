@@ -6,6 +6,5 @@ module.exports = function(defaults) {
   let app = new GlimmerApp(defaults, {
     // Add options here
   });
-
   return app.toTree();
 };

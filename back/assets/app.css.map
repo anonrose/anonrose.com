@@ -3,7 +3,7 @@
 	"file": "app.css",
 	"sourceRoot": "/Users/kylerose/Personal/personal-website/front/app/styles",
 	"sources": [
-		"../sass_compiler-input_base_path-SgZgrLct.tmp/src/ui/styles/app.scss"
+		"../sass_compiler-input_base_path-h9rlwYG3.tmp/src/ui/styles/app.scss"
 	],
 	"sourcesContent": [
 		"body {\n  padding: 50px;\n}\nh1 {\n  font-size: 28px !important;\n}\n.wrapper {\n  width: 860px;\n  margin: 0 auto;\n  header {\n    width: 270px;\n    float: left;\n    position: fixed;\n    -webkit-font-smoothing: subpixel-antialiased;\n    a {\n      padding: 10px;\n    }\n  }\n}\n"
