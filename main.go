@@ -2,6 +2,8 @@ package main
 
 import (
 	"net/http"
+
+	"google.golang.org/appengine" // Required external App Engine library
 )
 
 func serveFiles(w http.ResponseWriter, r *http.Request) {
@@ -15,6 +17,5 @@ func serveFiles(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", serveFiles)
-
-	http.ListenAndServe(":8080", nil)
+	appengine.Main()
 }
