@@ -1,18 +1,36 @@
+#circle-svg {
+  position: absolute;
+}
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Ubuntu'), url(UbuntuMono-R.ttf) format('woff');
+}
 body {
-  padding: 50px; }
-
-h1 {
-  font-size: 28px !important; }
-
-.wrapper {
-  width: 860px;
-  margin: 0 auto; }
-  .wrapper header {
-    width: 270px;
-    float: left;
-    position: fixed;
-    -webkit-font-smoothing: subpixel-antialiased; }
-    .wrapper header a {
-      padding: 10px; }
-
-/*# sourceMappingURL=app.css.map */
+  font-family: Ubuntu, "times new roman", times, roman, serif;
+}
+p {
+  font-size: 14px;
+  line-height: 2em;
+  margin: 0;
+  letter-spacing: 2px;
+}
+a {
+  color: #999;
+  text-decoration: none;
+  transition: color .2s ease;
+}
+.info {
+  position: absolute;
+    left: 0;
+    width: 320px;
+    text-align: center;
+    top: 55%;
+    left: 50%;
+    margin-left: -160px;
+    margin-top: -160px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+}
