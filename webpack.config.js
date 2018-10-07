@@ -8,7 +8,7 @@ module.exports = (env) => ({
   },
   plugins: [new HtmlWebpackPlugin({
     title: 'anonrose',
-    favicon: 'src/favicon.ico',
+    favicon: 'src/images/favicon.ico',
     template: 'src/index.html'
   }), new webpack.ProgressPlugin()],
   module: {
