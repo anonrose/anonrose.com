@@ -9,9 +9,9 @@ import (
 func serveFiles(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	if path == "/" {
-		http.ServeFile(w, r, "assets/index.html")
+		http.ServeFile(w, r, "dist/index.html")
 	} else {
-		http.ServeFile(w, r, "assets/"+path)
+		http.ServeFile(w, r, "dist/"+path)
 	}
 }
 
