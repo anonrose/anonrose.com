@@ -22,43 +22,61 @@ self.addEventListener('message', event => {
 
 self.addEventListener('fetch', event => {
   event.respondWith(
-    fetch(event.request).catch(async () => {
-      let response = caches.match(event.request);
-      if (response) {
+    caches.match(event.request).then(response => {
+      if (response) return response;
+
+      var fetchRequest = event.request.clone();
+
+      return fetch(fetchRequest).then(async response => {
+        if (!response || response.status !== 200 || response.type !== 'basic') return response;
+
+        var responseToCache = response.clone();
+
+        let cache = await caches.open(_CACHE_NAME_PREFIX);
+        cache.put(event.request, responseToCache);
+
         return response;
-      }
-      if (event.request.mode === 'navigate' || (event.request.method === 'GET' && event.request.headers.get('accept').includes('text/html'))) {
-        return caches.match('sw-offline-content');
-      }
+      }).catch(async () => {
+
+        let response = await caches.match(event.request);
+        if (response) {
+          return response;
+        }
+        if (event.request.mode === 'navigate' || (event.request.method === 'GET' && event.request.headers.get('accept').includes('text/html'))) {
+          return await caches.match('sw-offline-content');
+        }
+      });
     })
   );
 });
 
 var _parseSettingsAndCache = async settings => {
-  const newCacheName = `${_CACHE_NAME_PREFIX}-
+  if (navigator.onLine) {
+    const newCacheName = `${_CACHE_NAME_PREFIX}-
                         ${(settings['cache-version'] ? (settings['cache-version'] + '-') : '')}
                         ${_calculateHash(settings['content'] + settings['content-url'] + settings['assets'])}`;
 
-  const cache = await caches.open(newCacheName);
+    const cache = await caches.open(newCacheName);
 
-  if (settings['assets']) {
-    cache.addAll(settings['assets'].map(url => new Request(url, { mode: 'no-cors' })));
+    if (settings['assets']) {
+      cache.addAll(settings['assets'].map(url => new Request(url, { mode: 'no-cors' })));
+    }
+
+    if (settings['content-url']) {
+      const response = await fetch(settings['content-url'], { mode: 'no-cors' });
+      await cache.put('sw-offline-content', response);
+    }
+
+    const cacheNames = await caches.keys();
+
+    await Promise.all(
+      cacheNames.map(cacheName => {
+        if (cacheName.startsWith(_CACHE_NAME_PREFIX) && newCacheName !== cacheName) {
+          return caches.delete(cacheName);
+        }
+      })
+    );
   }
-
-  if (settings['content-url']) {
-    const response = await fetch(settings['content-url'], { mode: 'no-cors' });
-    await cache.put('sw-offline-content', response);
-  }
-
-  const cacheNames = await caches.keys();
-
-  await Promise.all(
-    cacheNames.map(cacheName => {
-      if (cacheName.startsWith(_CACHE_NAME_PREFIX) && newCacheName !== cacheName) {
-        return caches.delete(cacheName);
-      }
-    })
-  );
 };
 
 var _buildResponse = function (content) {
