@@ -1,5 +1,5 @@
-runtime: go
-api_version: go1
+runtime: go114
+instance_class: F2
 
 handlers:
 
